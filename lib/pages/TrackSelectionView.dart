@@ -199,49 +199,57 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
               ),
             )
             :       
-            ListView.separated(
-              shrinkWrap: true,
-              separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
-              itemCount: tracksAgenda.length,
-              itemBuilder: (context, index) {
-                var agenda = tracksAgenda[index];
-                return Slidable(
-                  endActionPane: ActionPane(
-                    motion: const ScrollMotion(),
-                    // A pane can dismiss the Slidable.
-                    
-                    children: [
-                      SlidableAction(
-                        onPressed: (ctx) {
-                          localStorage.setItem('selectedAgenda', json.encode(agenda));
-                          Navigator.pushNamed(context, '/attendance', arguments: json.encode(agenda));
-                        },
-                        backgroundColor: AppStyle.primary,
-                        foregroundColor: Colors.white,
-                        icon: Icons.no_accounts_outlined,
-                        label: 'Attend...',
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Card(
+                color: Colors.transparent,
+                elevation: 4,
+                clipBehavior: Clip.antiAlias,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
+                  itemCount: tracksAgenda.length,
+                  itemBuilder: (context, index) {
+                    var agenda = tracksAgenda[index];
+                    return Slidable(
+                      endActionPane: ActionPane(
+                        motion: const ScrollMotion(),
+                        // A pane can dismiss the Slidable.
+                        
+                        children: [
+                          SlidableAction(
+                            onPressed: (ctx) {
+                              localStorage.setItem('selectedAgenda', json.encode(agenda));
+                              Navigator.pushNamed(context, '/attendance', arguments: json.encode(agenda));
+                            },
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color.fromARGB(255, 70, 49, 49),
+                            icon: Icons.no_accounts_outlined,
+                            label: 'Attend...',
+                          ),
+                          SlidableAction(
+                            onPressed: (ctx) {
+                              localStorage.setItem('selectedAgenda', json.encode(agenda));
+                              
+                            },
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color.fromARGB(255, 70, 49, 49),
+                            icon: CupertinoIcons.ticket,
+                            label: 'Release',
+                          ),
+                        ],
                       ),
-                      SlidableAction(
-                        onPressed: (ctx) {
-                          localStorage.setItem('selectedAgenda', json.encode(agenda));
-                          
-                        },
-                        backgroundColor: AppStyle.success,
-                        foregroundColor: Colors.white,
-                        icon: CupertinoIcons.ticket,
-                        label: 'Release',
+                      child: ListTile(
+                        tileColor: const Color.fromARGB(255, 243, 243, 245),
+                        title: Text((agenda["name"] as String).toUpperCase(), style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        )),
+                        subtitle: Text(agenda["description"] as String),
                       ),
-                    ],
-                  ),
-                  child: ListTile(
-                    title: Text(agenda["name"] as String, style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-
-                    )),
-                    subtitle: Text(agenda["description"] as String),
-                  ),
-                );
-              }
+                    );
+                  }
+                ),
+              ),
             )
           ]
         ),
