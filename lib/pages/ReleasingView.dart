@@ -4,93 +4,104 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:evitecompanion/config/appstyle.dart';
-import 'package:evitecompanion/services/attendance.service.dart';
+import 'package:evitecompanion/services/release.service.dart';
 import 'package:evitecompanion/utils/datetoword.dart';
 import 'package:evitecompanion/views/QrScanner.dart';
 import 'package:flutter/material.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class AttendanceView extends StatefulWidget {
-  const AttendanceView({super.key});
+class ReleasingView extends StatefulWidget {
+  const ReleasingView({super.key});
 
   @override
-  State<AttendanceView> createState() => _AttendanceViewState();
+  State<ReleasingView> createState() => _ReleasingViewState();
 }
 
-class _AttendanceViewState extends State<AttendanceView> {
+class _ReleasingViewState extends State<ReleasingView> {
   final searchController = TextEditingController();
-  final attendanceModeController = TextEditingController();
+  final releaseTypeController = TextEditingController();
   Map<String, dynamic> agendaData = {};
-  List<dynamic> data = [];
-  int selectedAttendanceMode = 1;
+  List<dynamic> releaseTypes = [];
+  List<dynamic> releases = [];
+  int selectedReleaseType = 0;
   bool loaded = false;
 
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
-    fetchAttendance();
+    fetchReleaseTypes()
+      .then((data) {
+        fetchRelease();
+      });
   }
 
-  Future<List<dynamic>> fetchAttendance() async {
-    var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
+  Future<List<dynamic>> fetchReleaseTypes() async {
+    var agendaData = json.decode(localStorage.getItem('selectedAgenda') as String);
+    return ReleaseService.getReleaseTypesByAgendaTopicId(agendaData["id"])
+      .then((result) {
+        if (result.statusCode != 200) return Future.value([]);
 
+        setState(() {
+          releaseTypes = json.decode(result.body);
+          selectedReleaseType = releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0;
+          log(releaseTypes.toString());
+        });
+
+        return Future.value(releaseTypes);
+      })
+      .catchError((error) {
+        return Future.value([]);
+      });
+
+  }
+
+  Future<List<dynamic>> fetchRelease() async {
     setState(() {
+      releases = [];
       loaded = false;
     });
-
-    return AttendanceService.fetchAttendance(selectedAgenda['id'])
+    return ReleaseService.fetchRelease(selectedReleaseType)
       .then((result) {
+        if (result.statusCode != 200) return Future.value([]);
+
         setState(() {
-          data = json.decode(result.body);
+          releases = json.decode(result.body);
           loaded = true;
         });
-        return Future.value(data);
+
+        return Future.value(releases);
       })
-      .catchError((err) {
+      .catchError((error) {
         setState(() {
           loaded = true;
         });
-        _showSnackbar('Failed to load attendance data.');
+        _showSnackbar('Failed to load release data.');
         return Future.value([]);
       });
   }
 
-  List<dynamic> get computedData => data.where((user) {
-    var text = user["participant"]["eventParticipant"]["applicationUser"]["fullName"];
-    if (text.isEmpty) {
-      text = user["participant"]["eventParticipant"]["applicationUser"]["userName"];
-    }
-
-    return 
-      text.toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
-      user["type"] == selectedAttendanceMode;
-  }).toList();
-
-  Future<void> onAttendance(Map<String, dynamic> qrdata) async {
-    var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
-    return AttendanceService.addAttendance(selectedAgenda['id'], qrdata['eventParticipantId'], selectedAttendanceMode)
+  void onRelease(Map<String, dynamic> qrdata) {
+    log(selectedReleaseType.toString());
+    log(qrdata["eventParticipantId"].toString());
+    ReleaseService.addRelease(selectedReleaseType, qrdata["eventParticipantId"])
       .then((result) {
-        log("THIS!");
-        log(result.statusCode.toString());
         if (result.statusCode != 200) return null;
 
-        log(result.body);
-        var parsedAttendance = json.decode(result.body);
+        var parsedRelease = json.decode(result.body);
 
-        if (parsedAttendance['error'] == true) { // Maybe null?
-          _showSnackbar(parsedAttendance['errorMessage']);
+        if (parsedRelease['error'] == true) { // Maybe null?
+          _showSnackbar(parsedRelease['errorMessage']);
           return Future.value(null);
         }
 
         setState(() {
-          data.insert(0, parsedAttendance);
+          releases.insert(0, parsedRelease);
         });
-        _showSnackbar("Attendance submitted successfully.");
       })
-      .catchError((err) {
-        log(err.toString());
-        _showSnackbar("Failed to create attendance.");
+      .catchError((error) {
+        _showSnackbar('Failed to load release data.');
       });
   }
 
@@ -102,12 +113,19 @@ class _AttendanceViewState extends State<AttendanceView> {
     ));
   }
 
+  List<dynamic> get computedData => releases.where((release) => 
+    true /*
+      release["releaseType"]["type"].toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
+      release["releaseType"]["id"] == selectedReleaseType
+    */
+  ).toList();
+
   @override
   Widget build(BuildContext context) {
     agendaData = json.decode(ModalRoute.of(context)!.settings.arguments as String);
     AppBar appBar = AppBar(
       backgroundColor: AppStyle.primary,
-      title:Text(agendaData["name"] as String, style: const TextStyle(
+      title:Text('${agendaData["name"]}', style: const TextStyle(
         color: Colors.white,
       )),
       centerTitle: true,
@@ -121,7 +139,7 @@ class _AttendanceViewState extends State<AttendanceView> {
             child: Column(
               children: [
                 SizedBox(
-                  height: 50,
+                  height: 60,
                   child: TextField(
                     controller: searchController,
                     onChanged: (value) => setState(() {}),
@@ -134,45 +152,36 @@ class _AttendanceViewState extends State<AttendanceView> {
                 ),
                 const SizedBox(height: 10),
                 DropdownMenu(
-                  controller: attendanceModeController,
-                  initialSelection: 1,
+                  controller: releaseTypeController,
+                  initialSelection: releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0,
                   enableSearch: false,
                   requestFocusOnTap: false,
                   enableFilter: false,
-                  label: const Text('Mode'),
+                  label: const Text('Release Type'),
                   width: MediaQuery.of(context).size.width - 32,
-                  onSelected: (attendanceMode) {
+                  onSelected: (releaseType) {
                     setState(() {
-                      selectedAttendanceMode = attendanceMode;
+                      selectedReleaseType = releaseType;
+                      fetchRelease();
                     });
                   },
                   menuStyle: MenuStyle(
                     backgroundColor: WidgetStateProperty.resolveWith((states) {
                       return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
                     }),
-                    
                     elevation: WidgetStateProperty.resolveWith((states) {
                       return 8; //desired elevation
                     }),
                   ),
-                  dropdownMenuEntries: ([
-                    {
-                      "title": "In",
-                      "value": 1
-                    },
-                    {
-                      "title": "Out",
-                      "value": 0
-                    }
-                  ] as List<dynamic>).map((attendanceMode) {
+                  dropdownMenuEntries: releaseTypes.map((releaseType) {
                       return DropdownMenuEntry(
-                        value: attendanceMode['value'],
-                        label: attendanceMode['title'],
+                        value: releaseType['id'],
+                        label: releaseType['type'],
                       );
                     },
                   ).toList(),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 10),
                 SizedBox(
                   child:  (computedData.isEmpty && loaded) ?
                   SingleChildScrollView(
@@ -200,8 +209,7 @@ class _AttendanceViewState extends State<AttendanceView> {
                                   return;
                                 }
                                 else {
-                                  // 
-                                  fetchAttendance();
+                                  fetchRelease();
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -228,24 +236,15 @@ class _AttendanceViewState extends State<AttendanceView> {
                       child: ListView.separated(
                         physics: const NeverScrollableScrollPhysics(),
                         padding: EdgeInsets.zero,
+                        scrollDirection: Axis.vertical,
                         shrinkWrap: true,
                         separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
                         itemCount: loaded ? computedData.length : 4,
                         itemBuilder: (BuildContext context, int index) {
-                          var text = "Dummy Data";
-                          if (loaded) {
-                            text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["fullName"];
-                            if (text.isEmpty) {
-                              text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["userName"];
-                            }
-                          }
                           return ListTile(
                               tileColor: const Color.fromARGB(255, 226, 226, 233),
-                                title: Text(loaded ? text : 'Dummy Data'),
-                                subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["log"])) : 'Dummy Data', style: const TextStyle(
-                                  fontSize: 10
-                                )),
-                                trailing: const Icon(Icons.check),
+                              title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
+                              trailing: const Icon(Icons.check),
                             );
                         },
                       ),
@@ -264,18 +263,12 @@ class _AttendanceViewState extends State<AttendanceView> {
             if (content == null) return;
 
             log(content.toString());
-            onAttendance(json.decode(content as String));
+            onRelease(json.decode(content as String));
           });
         },
         tooltip: 'Scan QR Code',
         child: const Icon(Icons.qr_code_scanner),
       )
     );
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:evitecompanion/pages/AttendanceView.dart';
+import 'package:evitecompanion/pages/EventAttendanceView.dart';
 import 'package:evitecompanion/pages/EventSelectionListView.dart';
 import 'package:evitecompanion/pages/EventSelectionView.dart';
+import 'package:evitecompanion/pages/ReleasingView.dart';
 import 'package:evitecompanion/pages/TrackSelectionView.dart';
 import 'package:evitecompanion/pages/login.dart';
 import 'package:evitecompanion/pages/splash.dart';
@@ -40,6 +42,8 @@ class MyApp extends StatelessWidget {
         '/eventList': (BuildContext context) => const EventSelectionListView(),
         '/trackSelection': (BuildContext context) => const TrackSelectionView(),
         '/attendance': (BuildContext context) => const AttendanceView(),
+        '/eventAttendance': (BuildContext context) => const EventAttendanceView(),
+        '/releasingView': (BuildContext context) => const ReleasingView(),
       }
     );
   }

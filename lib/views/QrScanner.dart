@@ -1,12 +1,8 @@
-import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:evitecompanion/config/appstyle.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'dart:async';
 
 class QRScannerView extends StatefulWidget {
   const QRScannerView({super.key});
@@ -24,7 +20,6 @@ class _QRScannerViewState extends State<QRScannerView> {
   void initState() {
     // TODO: implement initState
     super.initState();
-
   }
 
   void _onQRViewCreated(QRViewController controller) {
@@ -33,9 +28,26 @@ class _QRScannerViewState extends State<QRScannerView> {
     });
 
     controller.scannedDataStream.listen((scanData) {
-      result = scanData;
-      Navigator.pop(context, result);
+      setState(() {
+        result = scanData;
+      });
     });
+
+  }
+
+  void onOk() {
+    Navigator.of(context).pop(result?.code);
+  }
+
+  // In order to get hot reload to work we need to pause the camera if the platform
+  // is android, or resume the camera if the platform is iOS.
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller!.pauseCamera();
+    }
+    controller!.resumeCamera();
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
@@ -71,6 +83,13 @@ class _QRScannerViewState extends State<QRScannerView> {
             padding: const EdgeInsets.only(bottom: 20),
             child: Wrap(
               children: [
+                if (result != null)
+                  IconButton(
+                    onPressed: onOk,
+                    color: AppStyle.success,
+                    icon: const Icon(Icons.check_circle),
+                    tooltip: 'Confirm QR Code',
+                  ),
                 IconButton(
                   onPressed: () {
                     Navigator.of(context).pop(null);
@@ -92,5 +111,13 @@ class _QRScannerViewState extends State<QRScannerView> {
     return Scaffold(
       body: onMobile(),
     );
+  }
+
+  @override
+  void dispose() {
+    result = null;
+    qrKey.currentState?.dispose();
+    controller?.dispose();
+    super.dispose();
   }
 }

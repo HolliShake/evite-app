@@ -54,44 +54,49 @@ class TrackCarouselCard extends StatelessWidget {
               SizedBox(
                 width: MediaQuery.of(context).size.width,
                 child: Wrap(
-                  spacing: 10,
-                  runSpacing: 20,
                   direction: Axis.horizontal,
                   alignment: WrapAlignment.start,
+                  spacing: 5,
                   children: [
                     Chip(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
                       side: const BorderSide(
                         width: 0,
                         color: Colors.transparent
                       ),
+                      visualDensity: VisualDensity.compact,
                       label: Wrap(
                         direction: Axis.horizontal,
+                        spacing: 2,
+                        clipBehavior: Clip.hardEdge,
                         children: [
                           const Icon(Icons.location_pin, size: 18, color: Colors.redAccent),
-                          const SizedBox(width: 5),
-                          Text(data["venue"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow:  TextOverflow.fade))
+                          Text(data["venue"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w100, fontSize: 10, overflow:  TextOverflow.fade))
                         ],
                       ), 
-                      labelPadding: const EdgeInsets.fromLTRB(7, 0, 7, 0),
+                      labelPadding: EdgeInsets.zero,
                       backgroundColor: const Color.fromARGB(255, 221, 191, 84), 
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),
                       ),
                     ),
                     Chip(
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
                       side: const BorderSide(
                         width: 0,
                         color: Colors.transparent
                       ),
+                      visualDensity: VisualDensity.compact,
                       label: Wrap(
                         direction: Axis.horizontal,
+                        spacing: 2,
+                        clipBehavior: Clip.hardEdge,
                         children: [
-                          const Icon(Icons.phone_android, size: 18, color: Colors.white),
-                          const SizedBox(width: 5),
-                          Text(data["onlineLink"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12))
+                          const Icon(Icons.phone_android, size: 16, color: Colors.white),
+                          Text(data["onlineLink"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 10))
                         ],
                       ), 
-                      labelPadding: const EdgeInsets.fromLTRB(7, 0, 7, 0),
+                      labelPadding: EdgeInsets.zero,
                       backgroundColor: const Color.fromARGB(255, 92, 36, 223), 
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(40),

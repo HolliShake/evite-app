@@ -11,39 +11,63 @@ import 'package:flutter/material.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class AttendanceView extends StatefulWidget {
-  const AttendanceView({super.key});
+
+class EventAttendanceView extends StatefulWidget {
+  const EventAttendanceView({super.key});
 
   @override
-  State<AttendanceView> createState() => _AttendanceViewState();
+  State<EventAttendanceView> createState() => _EventAttendanceViewState();
 }
 
-class _AttendanceViewState extends State<AttendanceView> {
+class _EventAttendanceViewState extends State<EventAttendanceView> {
   final searchController = TextEditingController();
+  final attendanceTypeController = TextEditingController();
   final attendanceModeController = TextEditingController();
-  Map<String, dynamic> agendaData = {};
+  Map<String, dynamic> eventData = {};
   List<dynamic> data = [];
+  List<dynamic> attendanceType = [];
+  int selectedAttendanceType = 0;
   int selectedAttendanceMode = 1;
   bool loaded = false;
+  bool popable = false;
 
   @override
   void initState() {
     super.initState();
-    fetchAttendance();
+    fetchAttendanceType()
+      .then((_) {
+        fetchAttendance();
+      });
+  }
+
+  Future<List<dynamic>> fetchAttendanceType() async {
+    var selectedEvent = json.decode(localStorage.getItem('selectedEvent') as String);
+    return AttendanceService.fetchAttendanceType(selectedEvent['id'])
+      .then((result) {
+        setState(() {
+          attendanceType = json.decode(result.body);
+          selectedAttendanceType = attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0;
+        });
+        return Future.value(attendanceType);
+      })
+      .catchError((err) {
+        _showSnackbar('Failed to load attendance type.');
+        return Future.value([]);
+      });
   }
 
   Future<List<dynamic>> fetchAttendance() async {
-    var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
-
+    var selectedEvent = json.decode(localStorage.getItem('selectedEvent') as String);
     setState(() {
       loaded = false;
+      data = [];
     });
-
-    return AttendanceService.fetchAttendance(selectedAgenda['id'])
+    return AttendanceService.fetchAttendanceByEventAndType(selectedEvent['id'], selectedAttendanceType)
       .then((result) {
+        log(result.body);
         setState(() {
-          data = json.decode(result.body);
           loaded = true;
+          data = (json.decode(result.body) as List<dynamic>).reversed.toList();
         });
         return Future.value(data);
       })
@@ -56,26 +80,17 @@ class _AttendanceViewState extends State<AttendanceView> {
       });
   }
 
-  List<dynamic> get computedData => data.where((user) {
-    var text = user["participant"]["eventParticipant"]["applicationUser"]["fullName"];
-    if (text.isEmpty) {
-      text = user["participant"]["eventParticipant"]["applicationUser"]["userName"];
-    }
-
-    return 
-      text.toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
-      user["type"] == selectedAttendanceMode;
-  }).toList();
+  List<dynamic> get computedData => data.where((user) => 
+    user["name"].toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
+    user["type"] == selectedAttendanceMode &&
+    user["eventAttendanceTypeId"] == selectedAttendanceType
+  ).toList();
 
   Future<void> onAttendance(Map<String, dynamic> qrdata) async {
-    var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
-    return AttendanceService.addAttendance(selectedAgenda['id'], qrdata['eventParticipantId'], selectedAttendanceMode)
+    AttendanceService.addEventAttendance(qrdata['eventParticipantId'], selectedAttendanceType, selectedAttendanceMode)
       .then((result) {
-        log("THIS!");
-        log(result.statusCode.toString());
         if (result.statusCode != 200) return null;
 
-        log(result.body);
         var parsedAttendance = json.decode(result.body);
 
         if (parsedAttendance['error'] == true) { // Maybe null?
@@ -89,7 +104,6 @@ class _AttendanceViewState extends State<AttendanceView> {
         _showSnackbar("Attendance submitted successfully.");
       })
       .catchError((err) {
-        log(err.toString());
         _showSnackbar("Failed to create attendance.");
       });
   }
@@ -102,12 +116,41 @@ class _AttendanceViewState extends State<AttendanceView> {
     ));
   }
 
+  Future<void> askToExit() {
+    return showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Exit'),
+          content: const Text('Are you sure you want to exit?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  popable = false;
+                });
+                Navigator.of(context).pop();
+              },
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Yes'),
+            )
+          ],
+        );
+      }
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    agendaData = json.decode(ModalRoute.of(context)!.settings.arguments as String);
+    eventData = json.decode(ModalRoute.of(context)!.settings.arguments as String);
     AppBar appBar = AppBar(
       backgroundColor: AppStyle.primary,
-      title:Text(agendaData["name"] as String, style: const TextStyle(
+      title:Text('${eventData["eventName"]}', style: const TextStyle(
         color: Colors.white,
       )),
       centerTitle: true,
@@ -121,7 +164,7 @@ class _AttendanceViewState extends State<AttendanceView> {
             child: Column(
               children: [
                 SizedBox(
-                  height: 50,
+                  height: 60,
                   child: TextField(
                     controller: searchController,
                     onChanged: (value) => setState(() {}),
@@ -133,6 +176,37 @@ class _AttendanceViewState extends State<AttendanceView> {
                   ),
                 ),
                 const SizedBox(height: 10),
+                DropdownMenu(
+                  controller: attendanceTypeController,
+                  initialSelection: attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0,
+                  enableSearch: false,
+                  requestFocusOnTap: false,
+                  enableFilter: false,
+                  label: const Text('Attendance Type'),
+                  width: MediaQuery.of(context).size.width - 32,
+                  onSelected: (attendanceType) {
+                    setState(() {
+                      selectedAttendanceType = attendanceType;
+                      fetchAttendance();
+                    });
+                  },
+                  menuStyle: MenuStyle(
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
+                    }),
+                    elevation: WidgetStateProperty.resolveWith((states) {
+                      return 8; //desired elevation
+                    }),
+                  ),
+                  dropdownMenuEntries: attendanceType.map((attendanceType) {
+                      return DropdownMenuEntry(
+                        value: attendanceType['id'],
+                        label: attendanceType['type'],
+                      );
+                    },
+                  ).toList(),
+                ),
+                const SizedBox(height: 15),
                 DropdownMenu(
                   controller: attendanceModeController,
                   initialSelection: 1,
@@ -172,7 +246,7 @@ class _AttendanceViewState extends State<AttendanceView> {
                     },
                   ).toList(),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 10),
                 SizedBox(
                   child:  (computedData.isEmpty && loaded) ?
                   SingleChildScrollView(
@@ -200,7 +274,6 @@ class _AttendanceViewState extends State<AttendanceView> {
                                   return;
                                 }
                                 else {
-                                  // 
                                   fetchAttendance();
                                 }
                               },
@@ -228,24 +301,19 @@ class _AttendanceViewState extends State<AttendanceView> {
                       child: ListView.separated(
                         physics: const NeverScrollableScrollPhysics(),
                         padding: EdgeInsets.zero,
+                        scrollDirection: Axis.vertical,
                         shrinkWrap: true,
                         separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
                         itemCount: loaded ? computedData.length : 4,
                         itemBuilder: (BuildContext context, int index) {
-                          var text = "Dummy Data";
-                          if (loaded) {
-                            text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["fullName"];
-                            if (text.isEmpty) {
-                              text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["userName"];
-                            }
-                          }
+                          log(loaded? computedData[index]["log"].toString() : 'ggg');
                           return ListTile(
                               tileColor: const Color.fromARGB(255, 226, 226, 233),
-                                title: Text(loaded ? text : 'Dummy Data'),
-                                subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["log"])) : 'Dummy Data', style: const TextStyle(
-                                  fontSize: 10
-                                )),
-                                trailing: const Icon(Icons.check),
+                              title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
+                              subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["log"])) : 'Dummy Data', style: const TextStyle(
+                                fontSize: 10
+                              )),
+                              trailing: const Icon(Icons.check),
                             );
                         },
                       ),
@@ -276,6 +344,9 @@ class _AttendanceViewState extends State<AttendanceView> {
   @override
   void dispose() {
     // TODO: implement dispose
+    searchController.dispose();
+    attendanceTypeController.dispose();
+    attendanceModeController.dispose();
     super.dispose();
   }
 }
