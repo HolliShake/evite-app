@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:evitecompanion/services/api.dart';
 import 'package:http/http.dart' as http;
 
@@ -8,10 +10,10 @@ class ReleaseService {
   }
 
   static Future<http.Response> addRelease(int releaseTypeId, int participantId) async {
-    return await Api.post('/ReleaseType/Add', {
+    return await Api.post('/Release/Add', [{
       "releaseTypeId": releaseTypeId,
-      "participantId": participantId,
-    });
+      "eventParticipantId":participantId
+    }]);
   }
 
   static Future<http.Response> fetchRelease(int releaseTypeId) async {

@@ -147,29 +147,32 @@ class _EventSelectionListViewState extends State<EventSelectionListView> {
                       ),
                     )
                     :
-                    ShaderMask(
-                      shaderCallback: (Rect rect) {
-                        return const LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.purple, Colors.transparent, Colors.transparent, Colors.purple],
-                          stops: [0.0, 0.1, 0.9, 1.0], // 10% purple, 80% transparent, 10% purple
-                        ).createShader(rect);
-                      },
-                      blendMode: BlendMode.dstOut,
-                      child: Skeletonizer(
-                        enabled: !loaded,
-                        child: ListView.separated(
-                          separatorBuilder: (context, index) => const SizedBox(height: 20),
-                          itemCount:  loaded ? filteredEvents.length : 4,
-                          itemBuilder: (context, index) => EventCard( loaded ? (filteredEvents[index] as Map<String, dynamic>) : eventSkeletonModel, onTap: (data) {
-                            if (!loaded) return;
-                            localStorage.setItem('selectedEvent', json.encode(data));
-                            Navigator.of(context).pushNamed('/trackSelection', arguments: json.encode(data));
-                          }),
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16, bottom: 16),
+                      child: ShaderMask(
+                        shaderCallback: (Rect rect) {
+                          return const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.purple, Colors.transparent, Colors.transparent, Colors.purple],
+                            stops: [0.0, 0.1, 0.9, 1.0], // 10% purple, 80% transparent, 10% purple
+                          ).createShader(rect);
+                        },
+                        blendMode: BlendMode.dstOut,
+                        child: Skeletonizer(
+                          enabled: !loaded,
+                          child: ListView.separated(
+                            separatorBuilder: (context, index) => const SizedBox(height: 20),
+                            itemCount:  loaded ? filteredEvents.length : 4,
+                            itemBuilder: (context, index) => EventCard( loaded ? (filteredEvents[index] as Map<String, dynamic>) : eventSkeletonModel, onTap: (data) {
+                              if (!loaded) return;
+                              localStorage.setItem('selectedEvent', json.encode(data));
+                              Navigator.of(context).pushNamed('/trackSelection', arguments: json.encode(data));
+                            }),
+                        ),
+                      )
                     )
-                  )
+                    )
                 )
               ],
             ),

@@ -86,9 +86,7 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
               ),
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                child: Wrap(
                   children: [
                     Chip(
                       side: const BorderSide(
@@ -106,14 +104,17 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
                       )),
                     ),
                    
-                    IconButton(
+                    ElevatedButton(
                       onPressed: () {
                         localStorage.setItem('selectedEvent', json.encode(eventData));
                         Navigator.of(context).pushNamed('/eventAttendance', arguments: json.encode(eventData));
                       },
-                      color: Colors.grey,
-                      icon: const Icon(Icons.event_seat),
-                      tooltip: 'Event Attendance',
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppStyle.buttonColor,
+                      ),
+                      child: const Text('Event Attendance', style: TextStyle(
+                        color: Colors.white,
+                      )),
                     )
                   ],
                 ),

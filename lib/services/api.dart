@@ -6,6 +6,7 @@ import 'package:localstorage/localstorage.dart';
 
 class Api {
   static const String apiUrl = 'https://evitepro-api.ustp.edu.ph/api';
+  static const String apiFileUrl = 'https://evitepro-api.ustp.edu.ph/Files';
 
   static Map<String, String> getConfig() {
     var accessToken = localStorage.getItem('accessToken');
@@ -20,7 +21,7 @@ class Api {
     return await http.get(Uri.parse(apiUrl + endPoint), headers: getConfig());
   }
 
-  static Future<http.Response> post(String endPoint, Map<String, dynamic> payload) async {
+  static Future<http.Response> post(String endPoint, var payload) async {
     return await http.post(Uri.parse(apiUrl + endPoint), body: json.encode(payload), headers: getConfig(), encoding: Encoding.getByName('utf-8'));
   }
 

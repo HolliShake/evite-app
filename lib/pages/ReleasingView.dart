@@ -67,7 +67,7 @@ class _ReleasingViewState extends State<ReleasingView> {
         if (result.statusCode != 200) return Future.value([]);
 
         setState(() {
-          releases = json.decode(result.body);
+          releases = (json.decode(result.body) as List<dynamic>).reversed.toList();
           loaded = true;
         });
 
@@ -87,20 +87,31 @@ class _ReleasingViewState extends State<ReleasingView> {
     log(qrdata["eventParticipantId"].toString());
     ReleaseService.addRelease(selectedReleaseType, qrdata["eventParticipantId"])
       .then((result) {
-        if (result.statusCode != 200) return null;
+        if (result.statusCode < 200 || result.statusCode >= 300) {
+          log(result.body);
+          _showSnackbar('Failed to release participant(${result.statusCode}).');
+          return null;
+        }
+
+        log('created');
+        log(result.body);
 
         var parsedRelease = json.decode(result.body);
 
-        if (parsedRelease['error'] == true) { // Maybe null?
-          _showSnackbar(parsedRelease['errorMessage']);
-          return Future.value(null);
+        if (parsedRelease is! List) {
+          if (parsedRelease['error'] == true) { // Maybe null?
+            _showSnackbar(parsedRelease['errorMessage']);
+            return Future.value(null);
+          }
         }
 
         setState(() {
-          releases.insert(0, parsedRelease);
+          releases.insert(0, parsedRelease[0]);
         });
+        _showSnackbar('Participant released.');
       })
       .catchError((error) {
+        log(error.toString());
         _showSnackbar('Failed to load release data.');
       });
   }
@@ -114,10 +125,10 @@ class _ReleasingViewState extends State<ReleasingView> {
   }
 
   List<dynamic> get computedData => releases.where((release) => 
-    true /*
-      release["releaseType"]["type"].toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
-      release["releaseType"]["id"] == selectedReleaseType
-    */
+  
+      release["releaseType"].toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
+      release["releaseTypeId"] == selectedReleaseType
+
   ).toList();
 
   @override

@@ -126,9 +126,17 @@ class _EventSelectionViewState extends State<EventSelectionView> {
         color: Colors.white,
       )),
       centerTitle: true,
+      leading: IconButton(
+        icon: const Icon(Icons.logout, color: Colors.white),
+        onPressed: () {
+          localStorage.clear();
+          Navigator.of(context).pushReplacementNamed('/splash');
+        },
+      )
     );
     return Scaffold(
       appBar: appBar,
+    
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(

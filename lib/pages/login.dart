@@ -6,6 +6,7 @@ import 'package:evitecompanion/config/appstyle.dart';
 import 'package:evitecompanion/services/login.service.dart';
 import 'package:evitecompanion/utils/regex.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'dart:convert' as convert;
 
@@ -20,11 +21,15 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
+  final googleSignIn = GoogleSignIn(
+    clientId: "152804519562-da8098g0m6pcd6qtep28opui03o1mi1a.apps.googleusercontent.com",
+    signInOption: SignInOption.standard,
+    scopes: ['email']
+  );
   final formKey = GlobalKey<FormState>();
   final userNameController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoaded = true;
-
 
   void onLoginAttempt() {
     if (!isLoaded) {
@@ -75,6 +80,64 @@ class _LoginViewState extends State<LoginView> {
         isLoaded = true;
       });
     }
+  }
+
+  void onLoginGoogleAttempt(BuildContext context, String? gaccessToken) {
+    if (gaccessToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        backgroundColor: AppStyle.snackBar,
+        content: Text('Failed to login with Google (code 0x03)', style: TextStyle(color: AppStyle.snackBarText))
+      ));
+      return;
+    }
+
+    log(gaccessToken);
+
+    LoginService.loginGoogleAttempt(gaccessToken)
+      .then((result) {
+        if (result.statusCode != 200) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              backgroundColor: AppStyle.snackBar,
+              content: Text('Failed to login with Google (code 0x04)', style: TextStyle(color: AppStyle.snackBarText))
+            ));
+            return;
+        }
+
+        var jsonResponse = convert.jsonDecode(result.body) as Map<String, dynamic>;
+
+        if (jsonResponse["error"] == true) {   
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            backgroundColor: AppStyle.snackBar,
+            content: Text(jsonResponse["errorMessage"], style: const TextStyle(color: AppStyle.snackBarText))
+          ));
+          return;
+        }
+
+        var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
+
+        if (data.keys.contains('IsOrganizer')) {
+          log(data['IsOrganizer']);
+          if (data['IsOrganizer'] != 'True') {
+            // Error
+            _showErrorDialog();
+          } else {
+            localStorage.setItem("accessToken", jsonResponse['token']);
+            localStorage.setItem("userData", json.encode(data));
+            Navigator.pushNamed(context, '/eventSelection');
+          }
+        } else {
+          // Error
+          _showErrorDialog();
+        }
+      })
+      .catchError((error) {
+        log(error.toString());
+        var message = 'Failed to login with Google (code 0x05)';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: AppStyle.snackBar,
+          content: Text(message, style: const TextStyle(color: AppStyle.snackBarText))
+        ));
+      });
   }
 
   void _showSnackbar(String message) {
@@ -266,6 +329,48 @@ class _LoginViewState extends State<LoginView> {
                                 ],
                                 
                                 const Text('Login', style: TextStyle(color: Colors.white))
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 50, thickness: 1, color: Colors.grey),
+                        // login with google
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              var ctx = context;
+                              googleSignIn.signIn()
+                                .then((value) {
+                                  if (value == null) {
+                                    return;
+                                  }
+                                  value.authentication.then((auth) {
+                                    log(auth.accessToken ?? 'acccess token invalid');
+                                    log(auth.idToken ?? 'id token invalid');
+                                    onLoginGoogleAttempt(ctx, (auth.idToken != null) ? auth.idToken : auth.accessToken);
+                                  })
+                                  .catchError((error) {
+                                    _showSnackbar('Failed to login with Google (code 0x02)');
+                                  });
+                                })
+                                .catchError((error) {
+                                  _showSnackbar('Failed to login with Google (code 0x01)');
+                                });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(4)),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset('assets/images/google.png', width: 20, height: 20),
+                                const SizedBox(width: 10),
+                                const Text('Signin with Google', style: TextStyle(color: Color.fromARGB(255, 37, 35, 35)))
                               ],
                             ),
                           ),

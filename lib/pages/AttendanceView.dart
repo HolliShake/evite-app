@@ -42,7 +42,7 @@ class _AttendanceViewState extends State<AttendanceView> {
     return AttendanceService.fetchAttendance(selectedAgenda['id'])
       .then((result) {
         setState(() {
-          data = json.decode(result.body);
+          data = (json.decode(result.body) as List<dynamic>).reversed.toList();
           loaded = true;
         });
         return Future.value(data);

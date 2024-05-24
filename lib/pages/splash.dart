@@ -1,3 +1,4 @@
+import 'package:evitecompanion/config/appstyle.dart';
 import 'package:flutter/material.dart';
 import 'package:localstorage/localstorage.dart';
 
@@ -29,8 +30,15 @@ class _SplashViewState extends State<SplashView> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Placeholder(),
+    return Scaffold(
+    
+      body: Center(
+        child: SizedBox(
+          width: 200,
+          height: 200,
+          child: Image.asset('assets/images/evite.ico')
+        )
+      ),
     );
   }
 }

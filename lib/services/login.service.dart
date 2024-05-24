@@ -12,5 +12,11 @@ class LoginService {
       "keepMeLogin": true
     });
   }
+
+  static Future<http.Response> loginGoogleAttempt(String googleToken) async {
+    return await Api.post('/Authentication/Login/Google', {
+      "googleToken": googleToken,
+    });
+  }
 }
 
