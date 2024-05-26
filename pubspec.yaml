@@ -44,7 +44,6 @@ dependencies:
   flutter_slidable: ^3.1.0
   qr_code_scanner: ^1.0.1
   qr_flutter: ^4.1.0
-  file_picker: ^8.0.3
   google_sign_in: ^6.2.1
   flutter_launcher_icons: "^0.13.1"
   
@@ -93,9 +92,14 @@ flutter:
     - assets/images/loginbg.jpg
     - assets/images/error403.jpg
     - assets/images/nodata.jpg
+    - assets/images/empty.png
     - assets/images/animationload.gif
     - assets/images/google.png
     - assets/images/evite.ico
+    - assets/images/planning1.png
+    - assets/images/planning2.jpg
+    - assets/images/planning3.png
+    - assets/images/planning4.jpg
     
 
 

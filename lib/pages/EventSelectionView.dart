@@ -4,6 +4,7 @@ import 'package:evitecompanion/config/appstyle.dart';
 import 'package:evitecompanion/services/organizer.service.dart';
 import 'package:evitecompanion/views/OrganizerCard.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -24,6 +25,11 @@ class _EventSelectionViewState extends State<EventSelectionView> {
     "organizerPhone": "Lorem ipsum dolor sit amet",
     "country": { "name": "Lorem ipsum" },
   };
+
+  bool disposed = false;
+  void mySetState(Function() fn) {
+    if (!disposed) setState(fn);
+  }
 
   @override
   void initState() {
@@ -52,13 +58,16 @@ class _EventSelectionViewState extends State<EventSelectionView> {
 
         var parsedResult = jsonDecode(result.body);
 
-        setState(() {
+        mySetState(() {
           loaded = true;
           myOrganizers = parsedResult;
         });
         return Future.value(myOrganizers);
       })
       .catchError((error) {
+        mySetState(() {
+          loaded = true;
+        });
         _showSnackbar('Failed to load organizer data.');
         return Future.value([]);
       });
@@ -129,100 +138,107 @@ class _EventSelectionViewState extends State<EventSelectionView> {
       leading: IconButton(
         icon: const Icon(Icons.logout, color: Colors.white),
         onPressed: () {
+          var isGoogle = localStorage.getItem('isGoogle') == 'true';
+          if (isGoogle) {
+            GoogleSignIn().signOut();
+          }
           localStorage.clear();
-          Navigator.of(context).pushReplacementNamed('/splash');
+          Navigator.of(context).pushReplacementNamed('/');
         },
       )
     );
     return Scaffold(
       appBar: appBar,
-    
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: 50,
-                  child: Center(
-                    child: TextField(
-                      controller: searchController,
-                      onChanged: (value) => setState(() {}),
-                      decoration: const InputDecoration(
-                        labelText: 'Search Previous Organizer',
-                        prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
+        child: RefreshIndicator(
+          onRefresh: fetchData,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    height: 50,
+                    child: Center(
+                      child: TextField(
+                        controller: searchController,
+                        onChanged: (value) => mySetState(() {}),
+                        decoration: const InputDecoration(
+                          labelText: 'Search Previous Organizer',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(8)),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height - (appBar.preferredSize.height + 50 + 20 + (20 + 20)), // Appbar + Search + spaceing + (Padding + Padding)
-                  child: (activeAndEnabled.isEmpty && loaded) ?
-                    SingleChildScrollView(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Image(
-                              image: const AssetImage('assets/images/nodata.jpg'),
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              height: MediaQuery.of(context).size.width * 0.7,
-                            ),
-                            const Text('No Organizer Found', style: TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold
-                            )),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (searchController.text.isNotEmpty) {
-                                  setState(() {
-                                    searchController.clear();
-                                  });
-                                  return;
-                                }
-                                else {
-                                  fetchData();
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppStyle.primary,
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height - (appBar.preferredSize.height + 50 + 20 + (20 + 20)), // Appbar + Search + spaceing + (Padding + Padding)
+                    child: (activeAndEnabled.isEmpty && loaded) ?
+                      SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Image(
+                                image: const AssetImage('assets/images/nodata.jpg'),
+                                width: MediaQuery.of(context).size.width * 0.7,
+                                height: MediaQuery.of(context).size.width * 0.7,
                               ),
-                              child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
-                                color: Colors.white,
+                              const Text('No Organizer Found', style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold
                               )),
-                            )
-                          ],
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (searchController.text.isNotEmpty) {
+                                    mySetState(() {
+                                      searchController.clear();
+                                    });
+                                    return;
+                                  }
+                                  else {
+                                    fetchData();
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppStyle.primary,
+                                ),
+                                child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
+                                  color: Colors.white,
+                                )),
+                              )
+                            ],
+                          ),
                         ),
-                      ),
-                    )
-                    :
-                    Skeletonizer(
-                      enabled: !loaded,
-                      child: ListView.separated(
-                        separatorBuilder: (context, index) => const SizedBox(height: 20),
-                        itemCount: loaded ? activeAndEnabled.length : 4,
-                        itemBuilder: (context, index) => OrganizerCard(loaded ? (activeAndEnabled[index] as Map<String, dynamic>) : organizerSkeletonModel, onTap: (data) {
-                          if (!loaded) return;
-                          var stringOrganizer = json.encode(data);
-                          localStorage.setItem('selectedOrganizer', stringOrganizer);
-                          Navigator.of(context).pushNamed('/eventList', arguments: stringOrganizer);
-                        }),
-                      ),
-                    )
-                      
-                )
-              ],
+                      )
+                      :
+                      Skeletonizer(
+                        enabled: !loaded,
+                        child: ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          separatorBuilder: (context, index) => const SizedBox(height: 20),
+                          itemCount: loaded ? activeAndEnabled.length : 4,
+                          itemBuilder: (context, index) => OrganizerCard(loaded ? (activeAndEnabled[index] as Map<String, dynamic>) : organizerSkeletonModel, onTap: (data) {
+                            if (!loaded) return;
+                            var stringOrganizer = json.encode(data);
+                            localStorage.setItem('selectedOrganizer', stringOrganizer);
+                            Navigator.of(context).pushNamed('/eventList', arguments: stringOrganizer);
+                          }),
+                        ),
+                      )
+                        
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -233,6 +249,7 @@ class _EventSelectionViewState extends State<EventSelectionView> {
   @override
   void dispose() {
     searchController.dispose();
+    disposed = true;
     super.dispose();
   }
 }

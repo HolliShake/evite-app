@@ -14,6 +14,10 @@ class OrganizerCard extends StatefulWidget {
 class _OrganizerCardState extends State<OrganizerCard> {
   final List<String> _images = [
     "assets/images/loginbg.jpg",
+    "assets/images/planning1.png",
+    "assets/images/planning2.jpg",
+    "assets/images/planning3.png",
+    "assets/images/planning4.jpg"
   ];
 
   @override
@@ -58,7 +62,6 @@ class _OrganizerCardState extends State<OrganizerCard> {
                   width: MediaQuery.of(context).size.width,
                   child: Wrap(
                     spacing: 10,
-                    runSpacing: 20,
                     direction: Axis.horizontal,
                     alignment: WrapAlignment.start,
                     children: [

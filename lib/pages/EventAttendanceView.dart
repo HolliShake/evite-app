@@ -28,29 +28,41 @@ class _EventAttendanceViewState extends State<EventAttendanceView> {
   List<dynamic> attendanceType = [];
   int selectedAttendanceType = 0;
   int selectedAttendanceMode = 1;
+  bool typesLoaded = false;
   bool loaded = false;
   bool popable = false;
+  
+  bool disposed = false;
+  void mySetState(Function() fn) {
+    if (!disposed) setState(fn);
+  }
 
   @override
   void initState() {
     super.initState();
-    fetchAttendanceType()
-      .then((_) {
-        fetchAttendance();
-      });
+    Future.delayed(const Duration(seconds: 1), () {
+      fetchAttendanceType()
+        .then((_) {
+          fetchAttendance();
+        });
+    });
   }
 
   Future<List<dynamic>> fetchAttendanceType() async {
     var selectedEvent = json.decode(localStorage.getItem('selectedEvent') as String);
     return AttendanceService.fetchAttendanceType(selectedEvent['id'])
       .then((result) {
-        setState(() {
+        mySetState(() {
+          typesLoaded = true;
           attendanceType = json.decode(result.body);
           selectedAttendanceType = attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0;
         });
         return Future.value(attendanceType);
       })
       .catchError((err) {
+        mySetState(() {
+          typesLoaded = true;
+        });
         _showSnackbar('Failed to load attendance type.');
         return Future.value([]);
       });
@@ -58,26 +70,42 @@ class _EventAttendanceViewState extends State<EventAttendanceView> {
 
   Future<List<dynamic>> fetchAttendance() async {
     var selectedEvent = json.decode(localStorage.getItem('selectedEvent') as String);
-    setState(() {
-      loaded = false;
-      data = [];
-    });
     return AttendanceService.fetchAttendanceByEventAndType(selectedEvent['id'], selectedAttendanceType)
       .then((result) {
-        log(result.body);
-        setState(() {
+        mySetState(() {
           loaded = true;
           data = (json.decode(result.body) as List<dynamic>).reversed.toList();
         });
         return Future.value(data);
       })
       .catchError((err) {
-        setState(() {
+        mySetState(() {
           loaded = true;
         });
         _showSnackbar('Failed to load attendance data.');
         return Future.value([]);
       });
+  }
+
+  Future<void> fetchReload() async {
+    var selectedEvent = json.decode(localStorage.getItem('selectedEvent') as String);
+    var attendanceTypeResponse = await AttendanceService.fetchAttendanceType(selectedEvent['id']);
+    if (attendanceTypeResponse.statusCode == 200) {
+        typesLoaded = true;
+        attendanceType = json.decode(attendanceTypeResponse.body);
+        selectedAttendanceType = attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0;
+        // Fetch attendance
+        var attendanceResponse = await AttendanceService.fetchAttendanceByEventAndType(selectedEvent['id'], selectedAttendanceType);
+        if (attendanceResponse.statusCode == 200) {
+          loaded = true;
+          data = (json.decode(attendanceResponse.body) as List<dynamic>).reversed.toList();
+          mySetState(() {});
+        } else {
+          _showSnackbar('Failed to load attendance data.');
+        }
+    } else {
+      _showSnackbar('Failed to load attendance type.');
+    }
   }
 
   List<dynamic> get computedData => data.where((user) => 
@@ -158,180 +186,185 @@ class _EventAttendanceViewState extends State<EventAttendanceView> {
     return Scaffold(
       appBar: appBar,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 60,
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: (value) => setState(() {}),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Search',
-                      hintText: 'Search',
+        child: RefreshIndicator(
+          onRefresh: fetchReload,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 60,
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (value) => setState(() {}),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Search',
+                        hintText: 'Search',
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                DropdownMenu(
-                  controller: attendanceTypeController,
-                  initialSelection: attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0,
-                  enableSearch: false,
-                  requestFocusOnTap: false,
-                  enableFilter: false,
-                  label: const Text('Attendance Type'),
-                  width: MediaQuery.of(context).size.width - 32,
-                  onSelected: (attendanceType) {
-                    setState(() {
-                      selectedAttendanceType = attendanceType;
-                      fetchAttendance();
-                    });
-                  },
-                  menuStyle: MenuStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
-                    }),
-                    elevation: WidgetStateProperty.resolveWith((states) {
-                      return 8; //desired elevation
-                    }),
+                  const SizedBox(height: 10),
+                  DropdownMenu(
+                    controller: attendanceTypeController,
+                    initialSelection: attendanceType.isNotEmpty ? attendanceType[0]['id'] : 0,
+                    enableSearch: false,
+                    requestFocusOnTap: false,
+                    enableFilter: false,
+                    label: const Text('Attendance Type'),
+                    width: MediaQuery.of(context).size.width - 32,
+                    onSelected: (attendanceType) {
+                      setState(() {
+                        selectedAttendanceType = attendanceType;
+                        fetchAttendance();
+                      });
+                    },
+                    menuStyle: MenuStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
+                      }),
+                      elevation: WidgetStateProperty.resolveWith((states) {
+                        return 8; //desired elevation
+                      }),
+                    ),
+                    dropdownMenuEntries: attendanceType.map((attendanceType) {
+                        return DropdownMenuEntry(
+                          value: attendanceType['id'],
+                          label: attendanceType['type'],
+                        );
+                      },
+                    ).toList(),
                   ),
-                  dropdownMenuEntries: attendanceType.map((attendanceType) {
-                      return DropdownMenuEntry(
-                        value: attendanceType['id'],
-                        label: attendanceType['type'],
-                      );
+                  const SizedBox(height: 15),
+                  DropdownMenu(
+                    controller: attendanceModeController,
+                    initialSelection: 1,
+                    enableSearch: false,
+                    requestFocusOnTap: false,
+                    enableFilter: false,
+                    label: const Text('Mode'),
+                    width: MediaQuery.of(context).size.width - 32,
+                    onSelected: (attendanceMode) {
+                      setState(() {
+                        selectedAttendanceMode = attendanceMode;
+                      });
                     },
-                  ).toList(),
-                ),
-                const SizedBox(height: 15),
-                DropdownMenu(
-                  controller: attendanceModeController,
-                  initialSelection: 1,
-                  enableSearch: false,
-                  requestFocusOnTap: false,
-                  enableFilter: false,
-                  label: const Text('Mode'),
-                  width: MediaQuery.of(context).size.width - 32,
-                  onSelected: (attendanceMode) {
-                    setState(() {
-                      selectedAttendanceMode = attendanceMode;
-                    });
-                  },
-                  menuStyle: MenuStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
-                    }),
-                    
-                    elevation: WidgetStateProperty.resolveWith((states) {
-                      return 8; //desired elevation
-                    }),
+                    menuStyle: MenuStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
+                      }),
+                      
+                      elevation: WidgetStateProperty.resolveWith((states) {
+                        return 8; //desired elevation
+                      }),
+                    ),
+                    dropdownMenuEntries: ([
+                      {
+                        "title": "In",
+                        "value": 1
+                      },
+                      {
+                        "title": "Out",
+                        "value": 0
+                      }
+                    ] as List<dynamic>).map((attendanceMode) {
+                        return DropdownMenuEntry(
+                          value: attendanceMode['value'],
+                          label: attendanceMode['title'],
+                        );
+                      },
+                    ).toList(),
                   ),
-                  dropdownMenuEntries: ([
-                    {
-                      "title": "In",
-                      "value": 1
-                    },
-                    {
-                      "title": "Out",
-                      "value": 0
-                    }
-                  ] as List<dynamic>).map((attendanceMode) {
-                      return DropdownMenuEntry(
-                        value: attendanceMode['value'],
-                        label: attendanceMode['title'],
-                      );
-                    },
-                  ).toList(),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  child:  (computedData.isEmpty && loaded) ?
-                  SingleChildScrollView(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Image(
-                              image: const AssetImage('assets/images/nodata.jpg'),
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              height: MediaQuery.of(context).size.width * 0.7,
-                            ),
-                            const Text('No Data Found', style: TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold
-                            )),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (searchController.text.isNotEmpty) {
-                                  setState(() {
-                                    searchController.clear();
-                                  });
-                                  return;
-                                }
-                                else {
-                                  fetchAttendance();
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppStyle.primary,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    child:  (computedData.isEmpty && loaded) ?
+                    SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Image(
+                                image: const AssetImage('assets/images/nodata.jpg'),
+                                width: MediaQuery.of(context).size.width * 0.7,
+                                height: MediaQuery.of(context).size.width * 0.7,
                               ),
-                              child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
-                                color: Colors.white,
+                              const Text('No Data Found', style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold
                               )),
-                            )
-                          ],
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (searchController.text.isNotEmpty) {
+                                    setState(() {
+                                      searchController.clear();
+                                    });
+                                    return;
+                                  }
+                                  else {
+                                    fetchAttendance();
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppStyle.primary,
+                                ),
+                                child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
+                                  color: Colors.white,
+                                )),
+                              )
+                            ],
+                          ),
+                        ),
+                      )
+                    :
+                    Card(
+                      color: Colors.transparent,
+                      elevation: 4,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Skeletonizer(
+                        enabled: !loaded,
+                        child: ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
+                          itemCount: loaded ? computedData.length : 4,
+                          itemBuilder: (BuildContext context, int index) {
+                            return ListTile(
+                                tileColor: const Color.fromARGB(255, 226, 226, 233),
+                                title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
+                                subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["log"])) : 'Dummy Data', style: const TextStyle(
+                                  fontSize: 10
+                                )),
+                                trailing: const Icon(Icons.check),
+                              );
+                          },
                         ),
                       ),
                     )
-                  :
-                  Card(
-                    color: Colors.transparent,
-                    elevation: 4,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Skeletonizer(
-                      enabled: !loaded,
-                      child: ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: EdgeInsets.zero,
-                        scrollDirection: Axis.vertical,
-                        shrinkWrap: true,
-                        separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
-                        itemCount: loaded ? computedData.length : 4,
-                        itemBuilder: (BuildContext context, int index) {
-                          log(loaded? computedData[index]["log"].toString() : 'ggg');
-                          return ListTile(
-                              tileColor: const Color.fromARGB(255, 226, 226, 233),
-                              title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
-                              subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["log"])) : 'Dummy Data', style: const TextStyle(
-                                fontSize: 10
-                              )),
-                              trailing: const Icon(Icons.check),
-                            );
-                        },
-                      ),
-                    ),
                   )
-                )
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: ()  {
+          if (selectedAttendanceType == 0) {
+            _showSnackbar('Please select attendance type.');
+            return;
+          }
           Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context) => const QRScannerView()))
           .then((content) {
             if (content == null) return;
 
-            log(content.toString());
             onAttendance(json.decode(content as String));
           });
         },
@@ -347,6 +380,7 @@ class _EventAttendanceViewState extends State<EventAttendanceView> {
     searchController.dispose();
     attendanceTypeController.dispose();
     attendanceModeController.dispose();
+    disposed = true;
     super.dispose();
   }
 }

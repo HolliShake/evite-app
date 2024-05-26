@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "806960755412",
+    "project_id": "evite-pro-app",
+    "storage_bucket": "evite-pro-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:806960755412:android:a6a8365a3f57efb42e4141",
+        "android_client_info": {
+          "package_name": "com.dto.evitecompanion"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "806960755412-psd6og40jdi9d7uubmmc51lruaesamqa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dto.evitecompanion",
+            "certificate_hash": "7603e5ec91f0efecd341a1e2c1840dd2efe1f81b"
+          }
+        },
+        {
+          "client_id": "806960755412-ht29qt2ha16hoolgerifn9jep9lcc7hl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1VQn0Jdib-9ngFlsxTSedty_UwwMbsoM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "806960755412-ht29qt2ha16hoolgerifn9jep9lcc7hl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

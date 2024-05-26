@@ -44,10 +44,10 @@ class _QRScannerViewState extends State<QRScannerView> {
   @override
   void reassemble() {
     super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    }
-    controller!.resumeCamera();
+    // if (Platform.isAndroid) {
+    //   controller!.pauseCamera();
+    // }
+    // controller!.resumeCamera();
   }
 
   void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
@@ -62,19 +62,17 @@ class _QRScannerViewState extends State<QRScannerView> {
   Widget onMobile() {
     return Stack(
       children: [
-        Expanded(
-          child: QRView(
-            key: qrKey,
-            onQRViewCreated: _onQRViewCreated,
-            overlay: QrScannerOverlayShape(
-                borderColor: Colors.red,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 10,
-                cutOutSize: (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400) ? 150.0 : 300.0
-            ),
-            onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+        QRView(
+          key: qrKey,
+          onQRViewCreated: _onQRViewCreated,
+          overlay: QrScannerOverlayShape(
+              borderColor: Colors.red,
+              borderRadius: 10,
+              borderLength: 30,
+              borderWidth: 10,
+              cutOutSize: (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400) ? 150.0 : 300.0
           ),
+          onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
         ),
         //
         Align(
@@ -104,6 +102,21 @@ class _QRScannerViewState extends State<QRScannerView> {
         )
       ],
     );
+  }
+
+  testMobile() {
+    return QRView(
+        key: qrKey,
+        onQRViewCreated: _onQRViewCreated,
+        overlay: QrScannerOverlayShape(
+            borderColor: AppStyle.error,
+            borderRadius: 10,
+            borderLength: 30,
+            borderWidth: 10,
+            cutOutSize: (MediaQuery.of(context).size.width < 400 || MediaQuery.of(context).size.height < 400) ? 150.0 : 300.0
+        ),
+        onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+      );
   }
 
   @override

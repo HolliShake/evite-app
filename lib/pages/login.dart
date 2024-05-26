@@ -22,7 +22,7 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final googleSignIn = GoogleSignIn(
-    clientId: "152804519562-da8098g0m6pcd6qtep28opui03o1mi1a.apps.googleusercontent.com",
+    clientId: "806960755412-ht29qt2ha16hoolgerifn9jep9lcc7hl.apps.googleusercontent.com",
     signInOption: SignInOption.standard,
     scopes: ['email']
   );
@@ -54,11 +54,11 @@ class _LoginViewState extends State<LoginView> {
         var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
 
         if (data.keys.contains('IsOrganizer')) {
-          log(data['IsOrganizer']);
           if (data['IsOrganizer'] != 'True') {
             // Error
             _showErrorDialog();
           } else {
+            localStorage.setItem('isGoogle', 'false');
             localStorage.setItem("accessToken", jsonResponse['token']);
             localStorage.setItem("userData", json.encode(data));
             Navigator.pushNamed(context, '/eventSelection');
@@ -91,8 +91,6 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
-    log(gaccessToken);
-
     LoginService.loginGoogleAttempt(gaccessToken)
       .then((result) {
         if (result.statusCode != 200) {
@@ -106,6 +104,7 @@ class _LoginViewState extends State<LoginView> {
         var jsonResponse = convert.jsonDecode(result.body) as Map<String, dynamic>;
 
         if (jsonResponse["error"] == true) {   
+          googleSignIn.signOut();
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             backgroundColor: AppStyle.snackBar,
             content: Text(jsonResponse["errorMessage"], style: const TextStyle(color: AppStyle.snackBarText))
@@ -116,22 +115,23 @@ class _LoginViewState extends State<LoginView> {
         var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
 
         if (data.keys.contains('IsOrganizer')) {
-          log(data['IsOrganizer']);
           if (data['IsOrganizer'] != 'True') {
             // Error
             _showErrorDialog();
           } else {
+            localStorage.setItem('isGoogle', 'true');
             localStorage.setItem("accessToken", jsonResponse['token']);
             localStorage.setItem("userData", json.encode(data));
             Navigator.pushNamed(context, '/eventSelection');
           }
         } else {
           // Error
+          googleSignIn.signOut();
           _showErrorDialog();
         }
       })
       .catchError((error) {
-        log(error.toString());
+        googleSignIn.signOut();
         var message = 'Failed to login with Google (code 0x05)';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: AppStyle.snackBar,
@@ -346,8 +346,6 @@ class _LoginViewState extends State<LoginView> {
                                     return;
                                   }
                                   value.authentication.then((auth) {
-                                    log(auth.accessToken ?? 'acccess token invalid');
-                                    log(auth.idToken ?? 'id token invalid');
                                     onLoginGoogleAttempt(ctx, (auth.idToken != null) ? auth.idToken : auth.accessToken);
                                   })
                                   .catchError((error) {

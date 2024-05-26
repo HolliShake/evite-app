@@ -1,4 +1,4 @@
-package com.example.evitecompanion
+package com.dto.evitecompanion
 
 import io.flutter.embedding.android.FlutterActivity
 

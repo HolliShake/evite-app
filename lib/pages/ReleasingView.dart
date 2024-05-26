@@ -27,6 +27,11 @@ class _ReleasingViewState extends State<ReleasingView> {
   int selectedReleaseType = 0;
   bool loaded = false;
 
+  bool disposed = false;
+  void mySetState(Function() fn) {
+    if (!disposed) setState(fn);
+  }
+
   @override
   void initState() {
     // TODO: implement initState
@@ -43,10 +48,9 @@ class _ReleasingViewState extends State<ReleasingView> {
       .then((result) {
         if (result.statusCode != 200) return Future.value([]);
 
-        setState(() {
+        mySetState(() {
           releaseTypes = json.decode(result.body);
           selectedReleaseType = releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0;
-          log(releaseTypes.toString());
         });
 
         return Future.value(releaseTypes);
@@ -58,7 +62,7 @@ class _ReleasingViewState extends State<ReleasingView> {
   }
 
   Future<List<dynamic>> fetchRelease() async {
-    setState(() {
+    mySetState(() {
       releases = [];
       loaded = false;
     });
@@ -66,7 +70,7 @@ class _ReleasingViewState extends State<ReleasingView> {
       .then((result) {
         if (result.statusCode != 200) return Future.value([]);
 
-        setState(() {
+        mySetState(() {
           releases = (json.decode(result.body) as List<dynamic>).reversed.toList();
           loaded = true;
         });
@@ -74,7 +78,7 @@ class _ReleasingViewState extends State<ReleasingView> {
         return Future.value(releases);
       })
       .catchError((error) {
-        setState(() {
+        mySetState(() {
           loaded = true;
         });
         _showSnackbar('Failed to load release data.');
@@ -82,19 +86,33 @@ class _ReleasingViewState extends State<ReleasingView> {
       });
   }
 
+  Future<void> fetchReload() async {
+    var agendaData = json.decode(localStorage.getItem('selectedAgenda') as String);
+    var releaseTypeResponse = await ReleaseService.getReleaseTypesByAgendaTopicId(agendaData["id"]);
+    if (releaseTypeResponse.statusCode == 200) {
+      releaseTypes = json.decode(releaseTypeResponse.body);
+      selectedReleaseType = releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0;
+      // Relases
+      var releaseResponse = await ReleaseService.fetchRelease(selectedReleaseType);
+      if (releaseResponse.statusCode == 200) {
+        releases = (json.decode(releaseResponse.body) as List<dynamic>).reversed.toList();
+        loaded = true;
+        mySetState((){});
+      } else {
+        _showSnackbar('Failed to load release data.');
+      }
+    } else {
+      _showSnackbar('Failed to load release types.');
+    }
+  }
+
   void onRelease(Map<String, dynamic> qrdata) {
-    log(selectedReleaseType.toString());
-    log(qrdata["eventParticipantId"].toString());
     ReleaseService.addRelease(selectedReleaseType, qrdata["eventParticipantId"])
       .then((result) {
         if (result.statusCode < 200 || result.statusCode >= 300) {
-          log(result.body);
           _showSnackbar('Failed to release participant(${result.statusCode}).');
           return null;
         }
-
-        log('created');
-        log(result.body);
 
         var parsedRelease = json.decode(result.body);
 
@@ -105,13 +123,12 @@ class _ReleasingViewState extends State<ReleasingView> {
           }
         }
 
-        setState(() {
+        mySetState(() {
           releases.insert(0, parsedRelease[0]);
         });
         _showSnackbar('Participant released.');
       })
       .catchError((error) {
-        log(error.toString());
         _showSnackbar('Failed to load release data.');
       });
   }
@@ -125,7 +142,6 @@ class _ReleasingViewState extends State<ReleasingView> {
   }
 
   List<dynamic> get computedData => releases.where((release) => 
-  
       release["releaseType"].toString().toLowerCase().startsWith(searchController.text.toLowerCase()) &&
       release["releaseTypeId"] == selectedReleaseType
 
@@ -144,136 +160,146 @@ class _ReleasingViewState extends State<ReleasingView> {
     return Scaffold(
       appBar: appBar,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 60,
-                  child: TextField(
-                    controller: searchController,
-                    onChanged: (value) => setState(() {}),
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Search',
-                      hintText: 'Search',
+        child: RefreshIndicator(
+          onRefresh: fetchReload,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 60,
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (value) => mySetState(() {}),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: 'Search',
+                        hintText: 'Search',
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                DropdownMenu(
-                  controller: releaseTypeController,
-                  initialSelection: releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0,
-                  enableSearch: false,
-                  requestFocusOnTap: false,
-                  enableFilter: false,
-                  label: const Text('Release Type'),
-                  width: MediaQuery.of(context).size.width - 32,
-                  onSelected: (releaseType) {
-                    setState(() {
-                      selectedReleaseType = releaseType;
-                      fetchRelease();
-                    });
-                  },
-                  menuStyle: MenuStyle(
-                    backgroundColor: WidgetStateProperty.resolveWith((states) {
-                      return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
-                    }),
-                    elevation: WidgetStateProperty.resolveWith((states) {
-                      return 8; //desired elevation
-                    }),
-                  ),
-                  dropdownMenuEntries: releaseTypes.map((releaseType) {
-                      return DropdownMenuEntry(
-                        value: releaseType['id'],
-                        label: releaseType['type'],
-                      );
+                  const SizedBox(height: 10),
+                  DropdownMenu(
+                    controller: releaseTypeController,
+                    initialSelection: releaseTypes.isNotEmpty ? releaseTypes[0]['id'] : 0,
+                    enableSearch: false,
+                    requestFocusOnTap: false,
+                    enableFilter: false,
+                    label: const Text('Release Type'),
+                    width: MediaQuery.of(context).size.width - 32,
+                    onSelected: (releaseType) {
+                      mySetState(() {
+                        selectedReleaseType = releaseType;
+                        fetchRelease();
+                      });
                     },
-                  ).toList(),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  child:  (computedData.isEmpty && loaded) ?
-                  SingleChildScrollView(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Image(
-                              image: const AssetImage('assets/images/nodata.jpg'),
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              height: MediaQuery.of(context).size.width * 0.7,
-                            ),
-                            const Text('No Data Found', style: TextStyle(
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold
-                            )),
-                            const SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () {
-                                if (searchController.text.isNotEmpty) {
-                                  setState(() {
-                                    searchController.clear();
-                                  });
-                                  return;
-                                }
-                                else {
-                                  fetchRelease();
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppStyle.primary,
+                    menuStyle: MenuStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
+                      }),
+                      elevation: WidgetStateProperty.resolveWith((states) {
+                        return 8; //desired elevation
+                      }),
+                    ),
+                    dropdownMenuEntries: releaseTypes.map((releaseType) {
+                        return DropdownMenuEntry(
+                          value: releaseType['id'],
+                          label: releaseType['type'],
+                        );
+                      },
+                    ).toList(),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    child:  (computedData.isEmpty && loaded) ?
+                    SingleChildScrollView(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              Image(
+                                image: const AssetImage('assets/images/nodata.jpg'),
+                                width: MediaQuery.of(context).size.width * 0.7,
+                                height: MediaQuery.of(context).size.width * 0.7,
                               ),
-                              child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
-                                color: Colors.white,
+                              const Text('No Data Found', style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold
                               )),
-                            )
-                          ],
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                onPressed: () {
+                                  if (searchController.text.isNotEmpty) {
+                                    mySetState(() {
+                                      searchController.clear();
+                                    });
+                                    return;
+                                  }
+                                  else {
+                                    fetchRelease();
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppStyle.primary,
+                                ),
+                                child: Text(searchController.text.isEmpty ? 'Reload' : 'Try again', style: const TextStyle(
+                                  color: Colors.white,
+                                )),
+                              )
+                            ],
+                          ),
+                        ),
+                      )
+                    :
+                    Card(
+                      color: Colors.transparent,
+                      elevation: 4,
+                      clipBehavior: Clip.antiAlias,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Skeletonizer(
+                        enabled: !loaded,
+                        child: ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: EdgeInsets.zero,
+                          scrollDirection: Axis.vertical,
+                          shrinkWrap: true,
+                          separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
+                          itemCount: loaded ? computedData.length : 4,
+                          itemBuilder: (BuildContext context, int index) {
+                            return ListTile(
+                                tileColor: const Color.fromARGB(255, 226, 226, 233),
+                                title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
+                                subtitle: Text(loaded ? dateToWord(DateTime.parse(computedData[index]["dateTimeRelease"])) : 'Dummy Data', style: const TextStyle(
+                                  fontSize: 10
+                                )),
+                                trailing: const Icon(Icons.check),
+                              );
+                          },
                         ),
                       ),
                     )
-                  :
-                  Card(
-                    color: Colors.transparent,
-                    elevation: 4,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Skeletonizer(
-                      enabled: !loaded,
-                      child: ListView.separated(
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: EdgeInsets.zero,
-                        scrollDirection: Axis.vertical,
-                        shrinkWrap: true,
-                        separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1, color: Colors.grey),
-                        itemCount: loaded ? computedData.length : 4,
-                        itemBuilder: (BuildContext context, int index) {
-                          return ListTile(
-                              tileColor: const Color.fromARGB(255, 226, 226, 233),
-                              title: Text(loaded ? computedData[index]["eventParticipant"].toString() : 'Dummy Data'),
-                              trailing: const Icon(Icons.check),
-                            );
-                        },
-                      ),
-                    ),
                   )
-                )
-              ],
+                ],
+              ),
             ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: ()  {
+          if (selectedReleaseType == 0) {
+            _showSnackbar('Please select release type.');
+            return;
+          }
+          
           Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context) => const QRScannerView()))
           .then((content) {
             if (content == null) return;
 
-            log(content.toString());
             onRelease(json.decode(content as String));
           });
         },
@@ -281,5 +307,14 @@ class _ReleasingViewState extends State<ReleasingView> {
         child: const Icon(Icons.qr_code_scanner),
       )
     );
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    searchController.dispose();
+    releaseTypeController.dispose();
+    disposed = true;
+    super.dispose();
   }
 }

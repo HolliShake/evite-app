@@ -15,7 +15,12 @@ class EventCard extends StatefulWidget {
 class _EventCardState extends State<EventCard> {
   final List<String> _images = [
     "assets/images/loginbg.jpg",
+    "assets/images/planning1.png",
+    "assets/images/planning2.jpg",
+    "assets/images/planning3.png",
+    "assets/images/planning4.jpg"
   ];
+  dynamic image;
 
 
   dynamic bannerOrRandom() {
@@ -27,6 +32,13 @@ class _EventCardState extends State<EventCard> {
       }
     }
     return AssetImage(_images[Random().nextInt(_images.length)]);
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    image = bannerOrRandom();
   }
   
   @override
@@ -46,7 +58,12 @@ class _EventCardState extends State<EventCard> {
             color: Colors.amberAccent,
             borderRadius: BorderRadius.circular(16),
             image: DecorationImage(
-              image: bannerOrRandom(),
+              image: image,
+              onError: (_, __) {
+                setState(() {
+                  image = AssetImage(_images[Random().nextInt(_images.length)]);
+                });
+              },
               fit: BoxFit.cover,
               colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.7), BlendMode.darken),
             ),
@@ -71,8 +88,7 @@ class _EventCardState extends State<EventCard> {
                 SizedBox(
                   width: MediaQuery.of(context).size.width,
                   child: Wrap(
-                    spacing: 10,
-                    runSpacing: 20,
+                    spacing: 5,
                     direction: Axis.horizontal,
                     alignment: WrapAlignment.start,
                     children: [

@@ -11,6 +11,10 @@ class TrackCarouselCard extends StatelessWidget {
 
   final List<String> _images = [
     "assets/images/loginbg.jpg",
+    "assets/images/planning1.png",
+    "assets/images/planning2.jpg",
+    "assets/images/planning3.png",
+    "assets/images/planning4.jpg"
   ];
 
 
@@ -49,7 +53,7 @@ class TrackCarouselCard extends StatelessWidget {
                 color: Colors.white,
                 overflow: TextOverflow.fade
               )),
-              Text(data["description"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow: TextOverflow.fade)),
+              Text((data["description"] as String), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow: TextOverflow.fade)),
               const SizedBox(height:10),
               SizedBox(
                 width: MediaQuery.of(context).size.width,
