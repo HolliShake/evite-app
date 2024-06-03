@@ -91,6 +91,7 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
                     alignment: Alignment.centerLeft,
                     child: Wrap(
                       spacing: 10,
+                      runSpacing: 10,
                       children: [
                         Chip(
                           side: const BorderSide(

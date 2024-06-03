@@ -53,20 +53,27 @@ class _LoginViewState extends State<LoginView> {
         var jsonResponse = convert.jsonDecode(result.body) as Map<String, dynamic>;
         var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
 
-        if (data.keys.contains('IsOrganizer')) {
-          if (data['IsOrganizer'] != 'True') {
-            // Error
-            _showErrorDialog();
-          } else {
-            localStorage.setItem('isGoogle', 'false');
-            localStorage.setItem("accessToken", jsonResponse['token']);
-            localStorage.setItem("userData", json.encode(data));
-            Navigator.pushNamed(context, '/eventSelection');
-          }
-        } else {
-          // Error
-          _showErrorDialog();
-        }
+        // if (data.keys.contains('IsOrganizer')) {
+        //   if (data['IsOrganizer'] != 'True') {
+        //     // Error
+        //     _showErrorDialog();
+        //   } else {
+        //     localStorage.setItem('isGoogle', 'false');
+        //     localStorage.setItem("accessToken", jsonResponse['token']);
+        //     localStorage.setItem("userData", json.encode(data));
+        //     Navigator.pushNamed(context, '/eventSelection');
+        //   }
+        // } else {
+        //   // Error
+        //   _showErrorDialog();
+        // }
+
+        log(data.toString());
+
+        localStorage.setItem('isGoogle', 'false');
+        localStorage.setItem("accessToken", jsonResponse['token']);
+        localStorage.setItem("userData", json.encode(data));
+        Navigator.pushNamed(context, '/eventSelection');
       })
       .catchError((err) {
         setState(() {
@@ -114,21 +121,28 @@ class _LoginViewState extends State<LoginView> {
 
         var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
 
-        if (data.keys.contains('IsOrganizer')) {
-          if (data['IsOrganizer'] != 'True') {
-            // Error
-            _showErrorDialog();
-          } else {
-            localStorage.setItem('isGoogle', 'true');
-            localStorage.setItem("accessToken", jsonResponse['token']);
-            localStorage.setItem("userData", json.encode(data));
-            Navigator.pushNamed(context, '/eventSelection');
-          }
-        } else {
-          // Error
-          googleSignIn.signOut();
-          _showErrorDialog();
-        }
+        log(data.toString());
+
+        // if (data.keys.contains('IsOrganizer')) {
+        //   if (data['IsOrganizer'] != 'True') {
+        //     // Error
+        //     _showErrorDialog();
+        //   } else {
+        //     localStorage.setItem('isGoogle', 'true');
+        //     localStorage.setItem("accessToken", jsonResponse['token']);
+        //     localStorage.setItem("userData", json.encode(data));
+        //     Navigator.pushNamed(context, '/eventSelection');
+        //   }
+        // } else {
+        //   // Error
+        //   googleSignIn.signOut();
+        //   _showErrorDialog();
+        // }
+
+        localStorage.setItem('isGoogle', 'true');
+        localStorage.setItem("accessToken", jsonResponse['token']);
+        localStorage.setItem("userData", json.encode(data));
+        Navigator.pushNamed(context, '/eventSelection');
       })
       .catchError((error) {
         googleSignIn.signOut();

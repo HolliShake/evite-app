@@ -113,7 +113,7 @@ class _EventSelectionListViewState extends State<EventSelectionListView> {
                   const SizedBox(height: 20),
                   SizedBox(
                     width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.height - (appBar.preferredSize.height + 50 + 20 + (20 + 20)), // Appbar + Search + spaceing + (Padding + Padding)
+                    height: MediaQuery.of(context).size.height - (appBar.preferredSize.height + 50 + 20 + (20 + 20)), // Appbar + Search + spacing + (Padding + Padding)
                     child: (filteredEvents.isEmpty && loaded)
                       ?
                       SingleChildScrollView(
@@ -159,7 +159,6 @@ class _EventSelectionListViewState extends State<EventSelectionListView> {
                       Skeletonizer(
                           enabled: !loaded,
                           child: ListView.separated(
-                            physics: const NeverScrollableScrollPhysics(),
                             separatorBuilder: (context, index) => const SizedBox(height: 20),
                             itemCount:  loaded ? filteredEvents.length : 4,
                             itemBuilder: (context, index) => EventCard( loaded ? (filteredEvents[index] as Map<String, dynamic>) : eventSkeletonModel, onTap: (data) {

@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:evitecompanion/config/app.dart';
 import 'package:evitecompanion/config/appstyle.dart';
 import 'package:evitecompanion/services/organizer.service.dart';
+import 'package:evitecompanion/services/organizermember.service.dart';
 import 'package:evitecompanion/views/OrganizerCard.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -50,6 +52,33 @@ class _EventSelectionViewState extends State<EventSelectionView> {
   }
 
   Future<List<dynamic>> fetchData() async {
+    var data = json.decode(localStorage.getItem('userData')!) as Map<String, dynamic>;
+    var isOrganizer = data.keys.contains('IsOrganizer') && (data['IsOrganizer'] == 'True');
+
+    if (!isOrganizer) {
+      return OrganizerMemberService.myParentOrganizer()
+        .then((result) {
+          if (result.statusCode != 200) {
+            return Future.value([]);
+          }
+
+          var parsedResult = jsonDecode(result.body);
+
+          mySetState(() {
+            loaded = true;
+            myOrganizers = parsedResult;
+          });
+          return Future.value(myOrganizers);
+        })
+        .catchError((error) {
+          mySetState(() {
+            loaded = true;
+          });
+          _showSnackbar('Failed to load organizer data.');
+          return Future.value([]);
+        });
+    }
+
     return OrganizerService.myOrganizer()
       .then((result) {
         if (result.statusCode != 200) {
@@ -121,8 +150,7 @@ class _EventSelectionViewState extends State<EventSelectionView> {
     if (searchController.text.isNotEmpty && (map["enable"] && map["isApproved"])) {
       return (map["organizerName"] as String).toLowerCase().startsWith(searchController.text.toLowerCase());
     }
-
-    return (map["enable"] && map["isApproved"]);
+    return true;
   }).toList(); 
 
   bool get isMultipleChoice => activeAndEnabled.length > 1;

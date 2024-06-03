@@ -57,9 +57,9 @@ class _AttendanceViewState extends State<AttendanceView> {
   }
 
   List<dynamic> get computedData => data.where((user) {
-    var text = user["participant"]["eventParticipant"]["applicationUser"]["fullName"];
+    var text = user["participant"]["eventParticipant"];
     if (text.isEmpty) {
-      text = user["participant"]["eventParticipant"]["applicationUser"]["userName"];
+      text = user["participant"]["eventParticipant"];
     }
 
     return 
@@ -232,9 +232,9 @@ class _AttendanceViewState extends State<AttendanceView> {
                           itemBuilder: (BuildContext context, int index) {
                             var text = "Dummy Data";
                             if (loaded) {
-                              text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["fullName"];
+                              text = computedData[index]["participant"]["eventParticipant"];
                               if (text.isEmpty) {
-                                text = computedData[index]["participant"]["eventParticipant"]["applicationUser"]["userName"];
+                                text = computedData[index]["participant"]["eventParticipant"];
                               }
                             }
                             return ListTile(
