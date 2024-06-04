@@ -26,7 +26,7 @@ class _EventCardState extends State<EventCard> {
   dynamic bannerOrRandom() {
     if ((widget.data["eventBanner"] as String).isNotEmpty) {
       try {
-        return NetworkImage("https://evitepro-api.ustp.edu.ph/files/${widget.data["eventBanner"]}");
+        return NetworkImage("https://evitepro-api.ustp.edu.ph/Files/${widget.data["eventBanner"]}");
       } catch (e) {
         // 
       }
@@ -39,6 +39,7 @@ class _EventCardState extends State<EventCard> {
     // TODO: implement initState
     super.initState();
     image = bannerOrRandom();
+    developer.log(widget.data.toString());
   }
   
   @override

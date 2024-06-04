@@ -68,8 +68,6 @@ class _LoginViewState extends State<LoginView> {
         //   _showErrorDialog();
         // }
 
-        log(data.toString());
-
         localStorage.setItem('isGoogle', 'false');
         localStorage.setItem("accessToken", jsonResponse['token']);
         localStorage.setItem("userData", json.encode(data));
@@ -120,8 +118,6 @@ class _LoginViewState extends State<LoginView> {
         }
 
         var data = JwtDecoder.decode(jsonResponse['token'] ?? '');
-
-        log(data.toString());
 
         // if (data.keys.contains('IsOrganizer')) {
         //   if (data['IsOrganizer'] != 'True') {

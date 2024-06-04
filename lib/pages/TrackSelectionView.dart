@@ -109,18 +109,18 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
                           )),
                         ),
                       
-                        ElevatedButton(
-                          onPressed: () {
-                            localStorage.setItem('selectedEvent', json.encode(eventData));
-                            Navigator.of(context).pushNamed('/eventAttendance', arguments: json.encode(eventData));
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppStyle.buttonColor,
-                          ),
-                          child: const Text('Event Attendance', style: TextStyle(
-                            color: Colors.white,
-                          )),
-                        )
+                        // ElevatedButton(
+                        //   onPressed: () {
+                        //     localStorage.setItem('selectedEvent', json.encode(eventData));
+                        //     Navigator.of(context).pushNamed('/eventAttendance', arguments: json.encode(eventData));
+                        //   },
+                        //   style: ElevatedButton.styleFrom(
+                        //     backgroundColor: AppStyle.buttonColor,
+                        //   ),
+                        //   child: const Text('Event Attendance', style: TextStyle(
+                        //     color: Colors.white,
+                        //   )),
+                        // )
                       ],
                     ),
                   ),
