@@ -1,6 +1,7 @@
 
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:evitecompanion/config/app.dart';
 import 'package:evitecompanion/config/appstyle.dart';
 import 'package:evitecompanion/services/login.service.dart';
@@ -22,7 +23,9 @@ class LoginView extends StatefulWidget {
 
 class _LoginViewState extends State<LoginView> {
   final googleSignIn = GoogleSignIn(
-    clientId: "806960755412-ht29qt2ha16hoolgerifn9jep9lcc7hl.apps.googleusercontent.com",
+    clientId: Platform.isAndroid ? 
+      "806960755412-ht29qt2ha16hoolgerifn9jep9lcc7hl.apps.googleusercontent.com"
+      : "806960755412-fllksc6o8bdf44965ae2qcrteqcgbp9p.apps.googleusercontent.com",
     signInOption: SignInOption.standard,
     scopes: ['email']
   );
