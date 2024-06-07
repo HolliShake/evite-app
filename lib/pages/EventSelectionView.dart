@@ -51,23 +51,33 @@ class _EventSelectionViewState extends State<EventSelectionView> {
       });
   }
 
+
   Future<List<dynamic>> fetchData() async {
     var data = json.decode(localStorage.getItem('userData')!) as Map<String, dynamic>;
     var isOrganizer = data.keys.contains('IsOrganizer') && (data['IsOrganizer'] == 'True');
 
-    if (!isOrganizer) {
-      return OrganizerMemberService.myParentOrganizer()
-        .then((result) {
+    return OrganizerMemberService.myParentOrganizer()
+        .then((result) async {
           if (result.statusCode != 200) {
             return Future.value([]);
           }
 
           var parsedResult = jsonDecode(result.body);
 
-          mySetState(() {
-            loaded = true;
-            myOrganizers = parsedResult;
-          });
+          // mySetState(() {
+          //   loaded = true;
+          //   myOrganizers = parsedResult;
+          // });
+
+          var data = await OrganizerService.myOrganizer();
+          if (data.statusCode == 200) {
+            mySetState(() {
+              loaded = true;
+              myOrganizers.addAll(parsedResult);
+              myOrganizers.addAll(jsonDecode(data.body));
+            });
+          }
+
           return Future.value(myOrganizers);
         })
         .catchError((error) {
@@ -77,29 +87,28 @@ class _EventSelectionViewState extends State<EventSelectionView> {
           _showSnackbar('Failed to load organizer data.');
           return Future.value([]);
         });
-    }
 
-    return OrganizerService.myOrganizer()
-      .then((result) {
-        if (result.statusCode != 200) {
-          return Future.value([]);
-        }
+    // return OrganizerService.myOrganizer()
+    //   .then((result) {
+    //     if (result.statusCode != 200) {
+    //       return Future.value([]);
+    //     }
+        
+    //     var parsedResult = jsonDecode(result.body);
 
-        var parsedResult = jsonDecode(result.body);
-
-        mySetState(() {
-          loaded = true;
-          myOrganizers = parsedResult;
-        });
-        return Future.value(myOrganizers);
-      })
-      .catchError((error) {
-        mySetState(() {
-          loaded = true;
-        });
-        _showSnackbar('Failed to load organizer data.');
-        return Future.value([]);
-      });
+    //     mySetState(() {
+    //       loaded = true;
+    //       myOrganizers.addAll(parsedResult);
+    //     });
+    //     return Future.value(myOrganizers);
+    //   })
+    //   .catchError((error) {
+    //     mySetState(() {
+    //       loaded = true;
+    //     });
+    //     _showSnackbar('Failed to load organizer data.');
+    //     return Future.value([]);
+    //   });
   }
 
   Future<void> _showRedirectDialog() {
