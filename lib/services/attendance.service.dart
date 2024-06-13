@@ -8,10 +8,11 @@ class AttendanceService {
     return await Api.get('/Attendance/AgendaTopic/$agendaTopicId');
   }
 
-  static Future<http.Response> addAttendance(int agendaTopicId, int eventParticipantId, int type) async {
+  static Future<http.Response> addAttendance(int agendaTopicId, int eventParticipantId, int attendanceType, int type) async {
     return await Api.post('/Attendance/Add', {
       "eventParticipantId": eventParticipantId,
-      "agendaTopicId":agendaTopicId,
+      "agendaTopicId": agendaTopicId,
+      "attendanceTypeId": attendanceType,
       "type": type,
       "log": DateTime.now().toIso8601String()
     });
@@ -27,6 +28,10 @@ class AttendanceService {
     return await Api.get('/Attendance/Event/$eventId/$attendanceTypeId');
   }
 
+  static Future<http.Response> fetchAttendanceByTopicAndAttendanceTypeId(int topicId, int attendanceTypeId) async {
+    return await Api.get('/Attendance/AgendaTopic/$topicId/$attendanceTypeId');
+  }
+
   static Future<http.Response> addEventAttendance(int eventParticipantId, int attendanceTypeId, int type) async {
     return await Api.post('/Attendance/Event/Add', {
       "eventParticipantId": eventParticipantId,
@@ -34,6 +39,10 @@ class AttendanceService {
       "type": type,
       "log": DateTime.now().toIso8601String()
     });
+  }
+
+  static Future<http.Response> fetchAttendanceTypeByTopicId(int topicId) async {
+    return await Api.get('/AttendanceType/Topic/$topicId');
   }
 }
 

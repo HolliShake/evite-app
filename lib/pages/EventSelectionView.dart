@@ -25,7 +25,7 @@ class _EventSelectionViewState extends State<EventSelectionView> {
     "organizerName": "Lorem ipsum dolor sit amet",
     "organizerEmail": "Lorem ipsum dolor sit amet",
     "organizerPhone": "Lorem ipsum dolor sit amet",
-    "country": { "name": "Lorem ipsum" },
+    "country": "Lorem ipsum",
   };
 
   bool disposed = false;
@@ -261,7 +261,6 @@ class _EventSelectionViewState extends State<EventSelectionView> {
                       Skeletonizer(
                         enabled: !loaded,
                         child: ListView.separated(
-                          physics: const NeverScrollableScrollPhysics(),
                           separatorBuilder: (context, index) => const SizedBox(height: 20),
                           itemCount: loaded ? activeAndEnabled.length : 4,
                           itemBuilder: (context, index) => OrganizerCard(loaded ? (activeAndEnabled[index] as Map<String, dynamic>) : organizerSkeletonModel, onTap: (data) {
@@ -272,7 +271,6 @@ class _EventSelectionViewState extends State<EventSelectionView> {
                           }),
                         ),
                       )
-                        
                   )
                 ],
               ),

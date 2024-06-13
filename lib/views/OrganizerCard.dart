@@ -1,5 +1,5 @@
+import 'dart:developer' as developer;
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 class OrganizerCard extends StatefulWidget {
@@ -75,7 +75,7 @@ class _OrganizerCardState extends State<OrganizerCard> {
                           children: [
                             const Icon(Icons.location_pin, size: 18, color: Colors.redAccent),
                             const SizedBox(width: 5),
-                            Text(widget.data["country"]["name"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow:  TextOverflow.fade))
+                            Text((widget.data["country"]) as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow:  TextOverflow.fade))
                           ],
                         ), 
                         labelPadding: const EdgeInsets.fromLTRB(7, 0, 7, 0),

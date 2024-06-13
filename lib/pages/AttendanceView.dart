@@ -21,8 +21,11 @@ class AttendanceView extends StatefulWidget {
 class _AttendanceViewState extends State<AttendanceView> {
   final searchController = TextEditingController();
   final attendanceModeController = TextEditingController();
+  final attendanceTypeController = TextEditingController();
   Map<String, dynamic> agendaData = {};
   List<dynamic> data = [];
+  List<dynamic> attendanceType = [];
+  int selectedAttendanceType = 0;
   int selectedAttendanceMode = 1;
   bool loaded = false;
 
@@ -34,12 +37,34 @@ class _AttendanceViewState extends State<AttendanceView> {
   @override
   void initState() {
     super.initState();
-    fetchAttendance();
+    fetchAttendanceType()
+      .then((attendanceType) {
+        if (attendanceType.isNotEmpty) fetchAttendance();
+      });
+  }
+
+  Future<List<dynamic>> fetchAttendanceType() async {
+    var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
+    return AttendanceService.fetchAttendanceTypeByTopicId(selectedAgenda['id'])
+      .then((result) {
+        mySetState(() {
+          attendanceType = json.decode(result.body);
+          selectedAttendanceType = (attendanceType.isNotEmpty) ? attendanceType[0]['id'] : 0;
+          if (attendanceType.isEmpty) {
+            loaded = true;
+          }
+        });
+        return Future.value(attendanceType);
+      })
+      .catchError((err) {
+        _showSnackbar('Failed to load attendance type data.');
+        return Future.value([]);
+      });
   }
 
   Future<List<dynamic>> fetchAttendance() async {
     var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
-    return AttendanceService.fetchAttendance(selectedAgenda['id'])
+    return AttendanceService.fetchAttendanceByTopicAndAttendanceTypeId(selectedAgenda['id'], selectedAttendanceType)
       .then((result) {
         mySetState(() {
           data = (json.decode(result.body) as List<dynamic>).reversed.toList();
@@ -69,7 +94,7 @@ class _AttendanceViewState extends State<AttendanceView> {
 
   Future<void> onAttendance(Map<String, dynamic> qrdata) async {
     var selectedAgenda = json.decode(localStorage.getItem('selectedAgenda') as String);
-    return AttendanceService.addAttendance(selectedAgenda['id'], qrdata['eventParticipantId'], selectedAttendanceMode)
+    return AttendanceService.addAttendance(selectedAgenda['id'], qrdata['eventParticipantId'], selectedAttendanceType, selectedAttendanceMode)
       .then((result) {
         if (result.statusCode != 200) return null;
 
@@ -129,6 +154,32 @@ class _AttendanceViewState extends State<AttendanceView> {
                         hintText: 'Search',
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownMenu(
+                    controller: attendanceTypeController,
+                    initialSelection: (attendanceType.isNotEmpty) ? attendanceType[0]['id'] : 0,
+                    enableSearch: false,
+                    requestFocusOnTap: false,
+                    enableFilter: false,
+                    label: const Text('Type'),
+                    width: MediaQuery.of(context).size.width - 32,
+                    menuStyle: MenuStyle(
+                      backgroundColor: WidgetStateProperty.resolveWith((states) {
+                        return const Color.fromARGB(255, 226, 226, 233); //your desired selected background color
+                      }),
+                      
+                      elevation: WidgetStateProperty.resolveWith((states) {
+                        return 8; //desired elevation
+                      }),
+                    ),
+                    dropdownMenuEntries: attendanceType.map((attendanceT) {
+                        return DropdownMenuEntry(
+                          value: attendanceT['id'],
+                          label: attendanceT['type'],
+                        );
+                      },
+                    ).toList(),
                   ),
                   const SizedBox(height: 10),
                   DropdownMenu(
