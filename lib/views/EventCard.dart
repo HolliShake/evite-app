@@ -1,7 +1,8 @@
 import 'dart:developer' as developer;
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
 
 class EventCard extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -83,7 +84,10 @@ class _EventCardState extends State<EventCard> {
                   color: Colors.white,
                   overflow: TextOverflow.fade
                 )),
-                Text(widget.data["description"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow: TextOverflow.fade)),
+                //Text(widget.data["description"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow: TextOverflow.fade)),
+                InAppWebView(
+                  initialData: InAppWebViewInitialData(data: widget.data["description"] as String),
+                ),
                 const SizedBox(height:10),
             
                 SizedBox(
