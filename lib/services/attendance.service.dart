@@ -36,8 +36,7 @@ class AttendanceService {
     return await Api.post('/Attendance/Event/Add', {
       "eventParticipantId": eventParticipantId,
       "attendanceTypeId": attendanceTypeId,
-      "type": type,
-      "log": DateTime.now().toIso8601String()
+      "type": type
     });
   }
 

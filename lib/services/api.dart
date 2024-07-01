@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:localstorage/localstorage.dart';
 
 class Api {
-  static const String apiUrl = 'https://evitepro-api.ustp.edu.ph/api';
+  static const String apiUrl = 'https://evitepro-api.ustp.edu.ph/dev/api';
   static const String apiFileUrl = 'https://evitepro-api.ustp.edu.ph/Files';
 
   static Map<String, String> getConfig() {

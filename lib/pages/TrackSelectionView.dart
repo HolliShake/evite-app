@@ -108,19 +108,52 @@ class _TrackSelectionViewState extends State<TrackSelectionView> {
                             color: Color.fromARGB(255, 73, 211, 135)
                           )),
                         ),
-                      
-                        // ElevatedButton(
-                        //   onPressed: () {
-                        //     localStorage.setItem('selectedEvent', json.encode(eventData));
-                        //     Navigator.of(context).pushNamed('/eventAttendance', arguments: json.encode(eventData));
-                        //   },
-                        //   style: ElevatedButton.styleFrom(
-                        //     backgroundColor: AppStyle.buttonColor,
-                        //   ),
-                        //   child: const Text('Event Attendance', style: TextStyle(
-                        //     color: Colors.white,
-                        //   )),
-                        // )
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 15,
+                    right: 15,
+                    top: 15,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/eventAttendance', arguments: json.encode(eventData));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppStyle.buttonColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          child: const Text('Event Attendance', style: TextStyle(
+                            color: Colors.white,
+                          )),
+                        ),
+
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pushNamed('/eventReleasing', arguments: json.encode(eventData));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amberAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          child: const Text('Event Releasing Attendance', style: TextStyle(
+                            color: Colors.white,
+                          )),
+                        )
                       ],
                     ),
                   ),
