@@ -86,12 +86,54 @@ class _EventCardState extends State<EventCard> {
                 )),
                 // Text(widget.data["description"] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w400, fontSize: 12, overflow: TextOverflow.fade)),
                 Html(
-                  data: widget.data["description"] as String,
-                  // style: {
-                  //   "p": Style(
-                  //     color: Colors.white,
-                  //   ),
-                  // },
+                  data: '<pre>${widget.data["description"] as String}</pre>',
+                  style: {
+                    "*": Style(
+                      color: Colors.white,
+                    ),
+                    "h1": Style(
+                      color: Colors.white,
+                    ),
+                    "h2": Style(
+                      color: Colors.white,
+                    ),
+                    "h3": Style(
+                      color: Colors.white,
+                    ),
+                    "h4": Style(
+                      color: Colors.white,
+                    ),
+                    "h5": Style(
+                      color: Colors.white,
+                    ),
+                    "h6": Style(
+                      color: Colors.white,
+                    ),
+                    "small": Style(
+                      color: Colors.white,
+                    ),
+                    "q": Style(
+                      color: Colors.white,
+                    ),
+                    "b": Style(
+                      color: Colors.white,
+                    ),
+                    "i": Style(
+                      color: Colors.white,
+                    ),
+                    "span": Style(
+                      color: Colors.white,
+                    ),
+                    "div": Style(
+                      color: Colors.white,
+                    ),
+                    "p": Style(
+                      color: Colors.white,
+                    ),
+                    "pre": Style(
+                      color: Colors.white,
+                    ),
+                  },
                 ),
                 const SizedBox(height:10),
             
@@ -99,6 +141,7 @@ class _EventCardState extends State<EventCard> {
                   width: MediaQuery.of(context).size.width,
                   child: Wrap(
                     spacing: 5,
+                    runSpacing: 5,
                     direction: Axis.horizontal,
                     alignment: WrapAlignment.start,
                     children: [
